@@ -1,0 +1,14 @@
+factor LabKey : (no, yes)
+factor sun : (day, night)
+
+transition sunrise : (sun = night, spontaneous 1, sun -> day, "The sun rises.")
+transition sunset : (sun = day, spontaneous 1, sun -> night, "The sun sets.")
+
+factor location : (COSI, Hallway, ITL)
+
+%transition ToCOSI : ((location = Hallway & LabKey = yes) | location = ITL, choice : "Enter COSI.", "You walk into the COSI lab.")
+
+%transition ToITL : ((location = Hallway & LabKey = yes) | location = COSI, choice : "Enter ITL.", "You walk into the ITL.")
+
+%transition ToHallway : (location = COSI | location = ITL, choice : "Leave room..", "You step out into the hallway.")
+

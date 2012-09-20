@@ -1,0 +1,11 @@
+# tex results
+*.toc
+*.aux
+*.log
+*.pdf
+# build results
+*.6
+/_obj
+/bin
+/src/*/_test/
+/src/textui/textui
