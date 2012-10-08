@@ -5,24 +5,27 @@ import (
 	"bufio"
 	"bytes"
 	"state"
-    "fmt"
+	"strconv"
 )
 
 const (
-	EOF         = 255
-	INT         = 128
-	STRING      = 129
-	FACTOR      = 130
-	TRANSITION  = 131
-	DESCRIPTION = 132
-	SPONTANEOUS = 133
-	CHOICE      = 134
+	EOF            = 255
+	INT            = 128
+	STRING         = 129
+	FACTOR         = 130
+	TRANSITION     = 131
+	DESCRIPTION    = 132
+	SPONTANEOUS    = 133
+	CHOICE         = 134
+	STRING_LITERAL = 135
+	FLOAT          = 136
 )
 
 var file_reader *(bufio.Reader)
 var current_token byte
 var current_string string
 var current_int int
+var current_float float64
 
 func error() {
 
@@ -53,15 +56,24 @@ func GetNextToken() byte {
 		switch current_byte {
 		case ' ', '\n':
 			return GetNextToken()
-		case ':', '(', ')', ',', '<', '>', '=', '-', '\\', '"', '+', '|', '&':
+		case ':', '(', ')', ',', '<', '>', '=', '-', '\\', '+', '|', '&':
 			return current_byte
         case '%':
             for (current_byte != '\n') {
                 current_byte, err = file_reader.ReadByte()
             }
             return GetNextToken()
+		case '"':
+			current_buffer := bytes.NewBuffer(make([]byte, 0, 80))
+			current_byte, _ := file_reader.ReadByte()
+			for current_byte != '"' {
+				current_buffer.WriteByte(current_byte)
+				current_byte, _ = file_reader.ReadByte()
+			}
+			current_string = current_buffer.String()
+			return STRING_LITERAL
 		}
-		if IsNum(current_byte) {
+		if IsNum(current_byte) || current_byte == '.' {
 			// current_byte is a digit - react accordingly
 			current_int = 0
 			for IsNum(current_byte) {
@@ -69,6 +81,20 @@ func GetNextToken() byte {
 				current_int += (int(current_byte) - 48)
 				current_byte, err = file_reader.ReadByte()
 			}
+			current_float = float64(current_int)
+
+			if current_byte == '.' {
+				dec_place := 0.1
+				current_byte, err = file_reader.ReadByte()
+				for IsNum(current_byte) {
+					current_float += float64(int(current_byte) - 48)*dec_place
+					dec_place /= 10
+					current_byte, err = file_reader.ReadByte()
+				}
+				file_reader.UnreadByte()
+				return FLOAT
+			}
+
 			file_reader.UnreadByte()
 			return INT
 		} else if IsAlpha(current_byte) {
@@ -91,8 +117,9 @@ func GetNextToken() byte {
 				return SPONTANEOUS
 			case current_string == "choice":
 				return CHOICE
+			default:
+				return STRING
 			}
-			return STRING
 		}
 	}
 	return 0
@@ -113,7 +140,6 @@ func ParseFile(filename string) *state.Universe {
 
 	current_token = GetNextToken()
 	AllFile()
-
 	return u
 }
 
@@ -136,12 +162,12 @@ func AllFile() {
 }
 
 func Factor() {
-	var initial string
+	//var initial string
 	name := FactorName()
 	Match(':')
 	Match('(')
 	values := FactorValues()
-	u.AddFactor(name, initial, values)
+	u.AddFactor(name, values[0], values)
 	Match(')')
 }
 
@@ -181,7 +207,7 @@ func FactorValue() string {
 	return val
 }
 
-func Transition() state.Transition {
+func Transition() {
 	Match(TRANSITION)
 	var name string
 	if current_token == STRING {
@@ -189,35 +215,41 @@ func Transition() state.Transition {
 	} else {
 		name = ""
 	}
-    fmt.Printf("%s\n", name)
 	Match(':')
 	Match('(')
-	Conjunction()
+	expression := Conjunction()
 	Match(',')
-	Schedule()
+	schedule := Schedule()
 	Match(',')
-	FactorTransitions()
+	effects := FactorTransitions()
 	var description string
 	if current_token == ',' {
 		Match(',')
-		description = StringLiteral()
-        fmt.Printf("%s\n", description)
+		description = current_string
+		Match(STRING_LITERAL)
 	} else {
 		description = ""
 	}
 	Match(')')
-    tran := state.Transition{name, nil, nil, description, nil}
+	u.AddTransition(name, expression, schedule, description, effects)
 }
 
 func Schedule() state.Schedule {
 	var ret state.Schedule
 	if current_token == SPONTANEOUS {
 		Match(SPONTANEOUS)
-		ret = state.Spontaneous{float64(current_int)}
-		Match(INT)
+		if current_token == INT {
+			ret = state.Spontaneous{float64(current_int)}
+			Match(INT)
+		} else {
+			ret = state.Spontaneous{current_float}
+			Match(FLOAT)
+		}
 	} else {
 		Match(CHOICE)
-		ret = state.Chosen{StringLiteral()}
+		Match(':')
+		ret = state.Chosen{current_string}
+		Match(STRING_LITERAL)
 	}
 	return ret
 }
@@ -230,124 +262,128 @@ func TransitionName() string {
 
 // Boolean requirements for the execution of transitions
 // Written in conjunctive form - CLAUSE & CLAUSE & ...
-func Conjunction() {
-	Disjunction()
+func Conjunction() state.BoolExpr {
+	var exps []state.BoolExpr
+	exps = append(exps, Disjunction())
 	for current_token == '&' {
 		Match('&')
-		Disjunction()
+		exps = append(exps, Disjunction())
 	}
+	return state.And{exps}
 }
 
-func Disjunction() {
-	Bool()
+func Disjunction() state.BoolExpr {
+	var exps []state.BoolExpr
+	exps = append(exps, Bool())
 	for current_token == '|' {
 		Match('|')
-		Bool()
+		exps = append(exps, Bool())
 	}
+	return state.Or{exps}
 }
 
-func Bool() {
+func Bool() state.BoolExpr {
 	if current_token == '(' {
 		Match('(')
-		Conjunction()
+		exp := Conjunction()
 		Match(')')
+		return exp
 	} else {
-		FactorName()
+		fac := u.FindFactor(FactorName())
 		switch current_token {
-		case '<':
-			Match('<')
-			if current_token == '=' {
-				Match('=')
-			}
+//		case '<':
+//			Match('<')
+//			if current_token == '=' {
+//				Match('=')
+//			}
 
-			if current_token == INT {
-				Match(INT)
-			} else {
-				FactorName()
-			}
-		case '>':
-			Match('>')
-			if current_token == '=' {
-				Match('=')
-			}
+//			if current_token == INT {
+//				Match(INT)
+//			} else {
+//				FactorName()
+//			}
+//		case '>':
+//			Match('>')
+//			if current_token == '=' {
+//				Match('=')
+//			}
 
-			if current_token == INT {
-				Match(INT)
-			} else {
-				FactorName()
-			}
+//			if current_token == INT {
+//				Match(INT)
+//			} else {
+//				FactorName()
+//			}
 		case '=':
 			Match('=')
 			if current_token == INT {
+				exp := state.FactorEquals{fac, state.Value(strconv.Itoa(current_int))}
 				Match(INT)
+				return exp
 			} else {
+				exp := state.FactorEquals{fac, state.Value(current_string)}
 				Match(STRING)
+				return exp
 			}
 		}
 	}
+	return nil
 }
 
-func FactorTransitions() {
+func FactorTransitions() map[*state.Factor]state.Value {
+	ret := make(map[*state.Factor]state.Value)
 	if current_token != '(' {
-		FactorTransition()
+		fac, val := FactorTransition()
+		ret[fac] = val
 	} else {
 		Match('(')
-		FactorTransitionList()
+		transitions := FactorTransitionList()
+		for fac, val := range(transitions) {
+			ret[fac] = val
+		}
 		Match(')')
 	}
+	return ret
 }
 
-func FactorTransitionList() {
-	FactorTransition()
+func FactorTransitionList() map[*state.Factor]state.Value {
+	ret := make(map[*state.Factor]state.Value)
+	fac, val := FactorTransition()
+	ret[fac] = val
 	for current_token == ',' {
 		Match(',')
-		FactorTransition()
+		fac, val = FactorTransition()
+		ret[fac] = val
 	}
+	return ret
 }
 
-func FactorTransition() {
-	FactorName()
+func FactorTransition() (*state.Factor, state.Value) {
+	fac := u.FindFactor(FactorName())
+	var val state.Value
 	if current_token == '-' {
 		Match('-')
 		if current_token == '>' {
 			Match('>')
-			FactorValue()
-		} else {
-			Match(INT)
-		}
-	} else {
-		Match('+')
-		if current_token == INT {
-			Match(INT)
-		}
+			val = state.Value(FactorValue())
+		}// else {
+//			Match(INT)
+//		}
+//	} else {
+//		Match('+')
+//		if current_token == INT {
+//			Match(INT)
+//		}
 	}
+	return fac, val
 }
 
-func StringLiteral() string {
-	if current_token != '"' {
-		error()
-	}
-	var previous_char byte
-	var current_char byte
-	current_char = ' '
-	ret := ""
-	for current_char != '"' || previous_char == '\\' {
-		previous_char = current_char
-		current_char, _ = file_reader.ReadByte()
-		ret += string(current_char)
-	}
-	file_reader.UnreadByte()
-	current_token = '"'
-	Match('"')
-	Match('"')
-	return ret
-}
 
 func Description() {
 	Match(':')
 	Match('(')
 	Conjunction()
 	Match(',')
-	StringLiteral()
+//	StringLiteral()
+	Match(STRING_LITERAL)
 	Match(')')
 }

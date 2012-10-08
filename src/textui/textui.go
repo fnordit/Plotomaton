@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"state"
+	"parser"
 	"math/rand"
 	"os"
 )
@@ -10,7 +10,7 @@ import (
 const debug bool = false
 
 func main() {
-	u := state.NewSampleUniverse()
+	u := parser.ParseFile("test")
 	s := u.Instantiate()
 	r := rand.New(rand.NewSource(rand.Int63()))
 
@@ -26,6 +26,9 @@ func main() {
 		// Display events
 		for {
 			log = log.Future()
+			if log == nil {
+				fmt.Printf("Error or summin\n")
+			}
 			if cause := log.Cause(); cause != nil {
 				fmt.Printf("%s\n", cause.Description())
 			}
@@ -48,8 +51,9 @@ func main() {
 		var choice int
 		for {
 			fmt.Fprintf(os.Stderr, "> ")
-			n, err := fmt.Scanf("%d", &choice)
-			if n < 1 {
+			fmt.Scanf("%d", &choice)
+//			n, err := fmt.Scanf("%d", &choice)
+/*			if n < 1 {
 				if err.String() == "unexpected newline" || err.String() == "expected integer" {
 					// TODO: KLUDGE. What we want here is distinguishing "malformed input" from "I/O error."
 					// read again
@@ -57,7 +61,7 @@ func main() {
 					fmt.Fprintf(os.Stderr, "error reading stdin: %s\n", err.String())
 					return
 				}
-			} else if choice < 0 || choice > len(choices) {
+			} else*/ if choice < 0 || choice > len(choices) {
 				fmt.Printf("Please enter a number between 1 and %d.\n", len(choices))
 			} else /* good result */ {
 				break

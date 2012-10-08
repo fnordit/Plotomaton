@@ -14,7 +14,7 @@ import (
 type Value string
 
 type Universe struct {
-	factors     map[*Factor]bool
+	factors     map[string]*Factor
 	transitions map[*Transition]bool
 }
 
@@ -68,12 +68,12 @@ type Moment struct {
 ////////////////////////////////////////////////////////////////////////////////
 
 func NewUniverse() *Universe {
-	return &Universe{map[*Factor]bool{}, map[*Transition]bool{}}
+	return &Universe{map[string]*Factor{}, map[*Transition]bool{}}
 }
 
 func (u Universe) String() string {
 	return listing("Universe[", "]", func(write func(string)) {
-		for f, _ := range u.factors {
+		for _, f := range u.factors {
 			write(f.String())
 		}
 	})
@@ -94,12 +94,13 @@ func (f Factor) String() string {
 }
 
 func (u *Universe) AddFactor(label string, initial string, values []string) *Factor {
+	// TODO: check if name is in use
 	f := newFactor(label)
 	for _, v := range values {
 		f.possible[Value(v)] = true
 	}
 	f.initial = Value(initial)
-	u.factors[f] = true
+	u.factors[label] = f
 	return f
 }
 
@@ -123,7 +124,7 @@ func newState(u *Universe, initial map[*Factor]Value) *State {
 // Create a State of this Universe with initial values.
 func (u *Universe) Instantiate() *State {
 	vs := map[*Factor]Value{}
-	for f, _ := range u.factors {
+	for _, f := range u.factors {
 		vs[f] = f.initial
 	}
 	return newState(u, vs)
@@ -132,7 +133,7 @@ func (u *Universe) Instantiate() *State {
 func (s State) String() string {
 	u := s.universe
 	return listing("State[", "]", func(write func(string)) {
-		for f, _ := range u.factors {
+		for _, f := range u.factors {
 			v := s.now.values[f]
 			_, valid := f.possible[v]
 			var note string
@@ -242,14 +243,6 @@ type Or struct {
 	Clauses []BoolExpr
 }
 
-func MkAnd(clauses ...BoolExpr) BoolExpr {
-	return And{clauses}
-}
-
-func MkOr(clauses ...BoolExpr) BoolExpr {
-	return Or{clauses}
-}
-
 func (e FactorEquals) Evaluate(s *State) bool {
 	return s.now.values[e.Factor] == e.Value
 }
@@ -306,6 +299,10 @@ func copyMap(in map[*Factor]Value) map[*Factor]Value {
 	return out
 }
 
+func (u *Universe) FindFactor(name string) *Factor {
+	return u.factors[name]
+}
+
 // utility for printing lists
 func listing(prefix string, suffix string, body func(func(string))) string {
 	var s []string
@@ -346,27 +343,27 @@ func NewSampleUniverse() *Universe {
 
 	loc := u.AddFactor("location", "COSI", []string{"Hallway", "COSI", "ITL"})
 	u.AddTransition("ToCOSI",
-		MkOr(
-			MkAnd(
+		Or{[]BoolExpr{
+			And{[]BoolExpr{
 				FactorEquals{loc, "Hallway"},
-				FactorEquals{key, "yes"}),
-			FactorEquals{loc, "ITL"}),
+				FactorEquals{key, "yes"}}},
+			FactorEquals{loc, "ITL"}}},
 		Chosen{"Enter COSI."},
 		"You walk into the COSI lab.",
 		map[*Factor]Value{loc: "COSI"})
 	u.AddTransition("ToITL",
-		MkOr(
-			MkAnd(
+		Or{[]BoolExpr{
+			And{[]BoolExpr{
 				FactorEquals{loc, "Hallway"},
-				FactorEquals{key, "yes"}),
-			FactorEquals{loc, "COSI"}),
+				FactorEquals{key, "yes"}}},
+			FactorEquals{loc, "COSI"}}},
 		Chosen{"Enter ITL."},
 		"You walk into the ITL.",
 		map[*Factor]Value{loc: "ITL"})
 	u.AddTransition("ToHallway",
-		MkOr(
+		Or{[]BoolExpr{
 			FactorEquals{loc, "ITL"},
-			FactorEquals{loc, "COSI"}),
+			FactorEquals{loc, "COSI"}}},
 		Chosen{"Leave room."},
 		"You step out into the hallway.",
 		map[*Factor]Value{loc: "Hallway"})

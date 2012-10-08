@@ -1,0 +1,33 @@
+factor LabKey : (no, yes)
+factor sun : (day, night)
+
+transition sunrise : (sun = night, spontaneous 1, sun -> day, "The sun rises.")
+transition sunset : (sun = day, spontaneous 1, sun -> night, "The sun sets.")
+
+factor location : (COSI, Hallway, ITL, Office)
+
+transition ToCOSI : ((location = Hallway & LabKey = yes) | location = ITL, choice : "Enter COSI.", location -> COSI, "You walk into the COSI lab.")
+
+transition ToITL : ((location = Hallway & LabKey = yes) | location = COSI, choice : "Enter ITL.", location -> ITL, "You walk into the ITL.")
+
+transition ToHallway : (location = COSI | location = ITL | location = Office, choice : "Leave room.", location -> Hallway, "You step out into the hallway.")
+
+transition ToOfficeDay : (location = Hallway & sun = day, choice : "Go to Jeanna's office.",  location -> Office, "Jeanna's door is open - you walk into her office.")
+
+transition ToOfficeNight : (location = Hallway & sun = night, choice : "Go to Jeanna's office.", location -> Hallway, "Jeanna's door is shut - you knock, but there is no answer.")
+
+factor JeannaActivity : (Working, OnPhone, Talking)
+
+transition JeannaPhone : (location = Office & JeannaActivity = Working, spontaneous 0.3, JeannaActivity -> OnPhone, "Jeanna's phone rings.  She answers it.")
+
+transition JeannaWork : (location = Office & JeannaActivity = OnPhone, spontaneous 0.3, JeannaActivity -> Working, "Jeanna hangs up her phone and returns to her computer.")
+
+factor MyActivity : (Chilling, StartingConversation, Talking)
+
+transition TalkToJeanna : (location = Office, choice : "Talk to Jeanna.", MyActivity -> StartingConversation, "You talk to Jeanna.")
+
+transition JeannaTalks : (location = Office & JeannaActivity = Working & MyActivity = StartingConversation, spontaneous 1, (JeannaActivity -> Talking, MyActivity -> Talking), "Jeanna gestures for you sit down.")
+
+transition JeannaBusy : (location = Office & JeannaActivity = OnPhone, spontaneous 1, MyActivity -> Chilling, "Jeanna is busy talking on the phone.")
+
+transition AskForKey : (location = Office & JeannaActivity = Talking & MyActivity = Talking, choice : "Ask for a COSI key.", LabKey -> yes, "Jeanna gives you a key.")
