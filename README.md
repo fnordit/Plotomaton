@@ -30,13 +30,15 @@ License: GPLv3
     along with Plotomaton.  If not, see <http://www.gnu.org/licenses/>.
 
 Project History
+
 Plotomaton started when, in the summer of 2011, I played a bunch of text based adventure games.
 That fall, Sam, Kieron, Kevin and I needed a project for a software design and development class,
 so we made the system.  It was originally housed on the Clarkson Open Source Institute's servers,
 but got deleted at some point, so in fall of 2012 when I started working on it again I put it up
 here.
 
-Installation
+Installation:
+
 Step 1: install go
 
 Step 2: install git
