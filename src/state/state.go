@@ -1,3 +1,29 @@
+/*
+    This file is part of Plotomaton.
+
+    Plotomaton is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Plotomaton is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Plotomaton.  If not, see <http://www.gnu.org/licenses/>.
+
+    Now that that's out of the way:
+    Original Author - Kevin Reid
+    Since updated, and currently maintained, by Sean Anderson
+    Contact: fnordit@gmail.com
+
+	(Not updated too much, though, Kevin knocked it out of the park the first time).
+
+	This is the guts of Plotomaton, and handles the internal state machine.
+*/
+
 package state
 
 import (
@@ -318,55 +344,4 @@ func listing(prefix string, suffix string, body func(func(string))) string {
 	})
 	s = append(s, suffix)
 	return strings.Join(s, "")
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// Example universe; a placeholder until we have a parser for game data files
-
-func NewSampleUniverse() *Universe {
-	u := NewUniverse()
-
-	key := u.AddFactor("LabKey", "no", []string{"yes", "no"})
-
-	sun := u.AddFactor("sun", "day", []string{"day", "night"})
-	u.AddTransition("sunrise",
-		FactorEquals{sun, "night"},
-		Spontaneous{1},
-		"The sun rises.",
-		map[*Factor]Value{sun: "day"})
-	u.AddTransition("sunset",
-		FactorEquals{sun, "day"},
-		Spontaneous{1},
-		"The sun sets.",
-		map[*Factor]Value{sun: "night"})
-
-	loc := u.AddFactor("location", "COSI", []string{"Hallway", "COSI", "ITL"})
-	u.AddTransition("ToCOSI",
-		Or{[]BoolExpr{
-			And{[]BoolExpr{
-				FactorEquals{loc, "Hallway"},
-				FactorEquals{key, "yes"}}},
-			FactorEquals{loc, "ITL"}}},
-		Chosen{"Enter COSI."},
-		"You walk into the COSI lab.",
-		map[*Factor]Value{loc: "COSI"})
-	u.AddTransition("ToITL",
-		Or{[]BoolExpr{
-			And{[]BoolExpr{
-				FactorEquals{loc, "Hallway"},
-				FactorEquals{key, "yes"}}},
-			FactorEquals{loc, "COSI"}}},
-		Chosen{"Enter ITL."},
-		"You walk into the ITL.",
-		map[*Factor]Value{loc: "ITL"})
-	u.AddTransition("ToHallway",
-		Or{[]BoolExpr{
-			FactorEquals{loc, "ITL"},
-			FactorEquals{loc, "COSI"}}},
-		Chosen{"Leave room."},
-		"You step out into the hallway.",
-		map[*Factor]Value{loc: "Hallway"})
-
-	return u
 }

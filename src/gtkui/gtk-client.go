@@ -1,3 +1,29 @@
+/*
+    This file is part of Plotomaton.
+
+    Plotomaton is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Plotomaton is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Plotomaton.  If not, see <http://www.gnu.org/licenses/>.
+
+    Now that that's out of the way:
+    Original Author - Keiron Gillespie
+    Currently (ostensibly) maintained by Sean Anderson
+    Contact: fnordit@gmail.com
+
+	The Go-GTK library was still young when Kieron wrote this, and has since
+    changed.  It no longer works, and I don't know enough to fix it.  This is
+	a long term goal; for now, the text UI works fine.
+*/
+
 package main
 
 import (

@@ -1,3 +1,25 @@
+/*
+    This file is part of Plotomaton.
+
+    Plotomaton is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Plotomaton is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Plotomaton.  If not, see <http://www.gnu.org/licenses/>.
+
+	Now that that's out of the way:
+	Original Author - Samuel Payson
+	Since updated, and currently maintained, by Sean Anderson
+	Contact: fnordit@gmail.com
+*/
+
 package main
 
 import (
@@ -27,7 +49,7 @@ func main() {
 		for {
 			log = log.Future()
 			if log == nil {
-				fmt.Printf("Error or summin\n")
+				fmt.Printf("Error or something\n")
 			}
 			if cause := log.Cause(); cause != nil {
 				fmt.Printf("%s\n", cause.Description())
@@ -44,9 +66,10 @@ func main() {
 
 		// Have user choose a transition
 		choices := s.ChosenTransitions()
-		fmt.Fprintf(os.Stderr, "  0. Do nothing.\n")
+		fmt.Fprintf(os.Stdout, "  0. Exit.\n")
+		fmt.Fprintf(os.Stderr, "  1. Do nothing.\n")
 		for i, t := range choices {
-			fmt.Fprintf(os.Stderr, "  %d. %s\n", i+1, t.ChoiceDescription())
+			fmt.Fprintf(os.Stderr, "  %d. %s\n", i+2, t.ChoiceDescription())
 		}
 		var choice int
 		for {
@@ -67,7 +90,10 @@ func main() {
 				break
 			}
 		}
-		if choice != 0 {
+		if choice == 0 {
+			return
+		}
+		if choice != 1 {
 			choices[choice-1].Apply(s)
 		}
 	}

@@ -1,3 +1,28 @@
+/*
+    This file is part of Plotomaton.
+
+    Plotomaton is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Plotomaton is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Plotomaton.  If not, see <http://www.gnu.org/licenses/>.
+
+    Now that that's out of the way:
+    Author - Sean Anderson
+    Contact: fnordit@gmail.com
+
+	This is the parser for Plotomaton.  It's a basic recusive descent parser 
+	that directly calls initialization functions in the state package, then 
+	hands off the initialized game state to the UI to allow interaction with.
+*/
+
 package parser
 
 import (
@@ -48,6 +73,7 @@ func IsNum(c byte) bool {
 	return (c >= '0' && c <= '9')
 }
 
+// Gets the next parsable token and returns its type, stores its value
 func GetNextToken() byte {
 	current_byte, err := file_reader.ReadByte()
 	if err != nil {
@@ -127,6 +153,7 @@ func GetNextToken() byte {
 
 var u *state.Universe
 
+// Reads the text file and starts the process
 func ParseFile(filename string) *state.Universe {
 	f, err := os.Open(filename)
 	file_reader = bufio.NewReader(f)
