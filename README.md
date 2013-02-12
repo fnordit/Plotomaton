@@ -38,14 +38,23 @@ here.
 
 Installation
 Step 1: install go
+
 Step 2: install git
+
 Step 3: set up remote git repository
-    - Create a directory and go there
-    - git init
-    - git remote add origin https://github.com/fnordit/Plotomaton.git
-    - git pull origin master
+
+- Create a directory and go there
+
+- git init
+
+- git remote add origin https://github.com/fnordit/Plotomaton.git
+
+- git pull origin master
+
 Step 4: export GOPATH="/home/[USR]/[DIR]/"
+
 Step 5: modify src/textui/test
+
 Step 6: go run textui.go
 
 It will run the file named "test" stored in the textui directory.
