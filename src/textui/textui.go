@@ -32,15 +32,24 @@ import (
 const debug bool = false
 
 func main() {
-	u := parser.ParseFile("test")
+	if len(os.Args) < 2 {
+		fmt.Printf("Please provide an input filename as an argument\n")
+		return
+	}
+
+	input := os.Args[1]
+
+	fmt.Printf("Running: %s\n", input)
+
+	u := parser.ParseFile(input)
+	if u == nil {
+		fmt.Printf("Invalid input file\n")
+		return
+	}
 	s := u.Instantiate()
 	r := rand.New(rand.NewSource(rand.Int63()))
 
 	log := s.Now()
-
-	if debug {
-		fmt.Printf("Hello, %v.\n", u)
-	}
 
 	for {
 		s.RunSpontaneous(r)

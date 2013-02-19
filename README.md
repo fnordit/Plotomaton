@@ -55,8 +55,10 @@ Step 3: set up remote git repository
 
 Step 4: export GOPATH="/home/[USR]/[DIR]/"
 
-Step 5: modify src/textui/test
+Step 5: create src/textui/[INPUT]
 
-Step 6: go run textui.go
+We already have src/textui/test for an example.
 
-It will run the file named "test" stored in the textui directory.
+Step 6: go run textui.go [INPUT]
+
+Use number keys to choose options.
